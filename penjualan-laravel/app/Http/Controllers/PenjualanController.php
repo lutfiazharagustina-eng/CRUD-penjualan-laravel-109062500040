@@ -8,9 +8,27 @@ use Illuminate\Validation\Rule;
 
 class PenjualanController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $penjualan = Penjualan::query()
+        $query = Penjualan::query();
+
+        // Fitur pencarian transaksi
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function ($q) use ($search) {
+                $q->where('kode_transaksi', 'like', "%{$search}%")
+                    ->orWhere('nama_pelanggan', 'like', "%{$search}%")
+                    ->orWhere('nama_produk', 'like', "%{$search}%");
+            });
+        }
+
+        // Fitur filter status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $penjualan = $query
             ->orderByDesc('tanggal')
             ->orderByDesc('id')
             ->get();
@@ -33,7 +51,7 @@ class PenjualanController extends Controller
                 'required',
                 'string',
                 'max:30',
-                'unique:penjualan,kode_transaksi',
+                'unique:penjualan,kode_transaksi'
             ],
             'tanggal' => ['required', 'date'],
             'nama_pelanggan' => ['required', 'string', 'max:100'],
@@ -44,7 +62,8 @@ class PenjualanController extends Controller
             'catatan' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $validated['total'] = $validated['jumlah'] * $validated['harga_satuan'];
+        $validated['total'] =
+            $validated['jumlah'] * $validated['harga_satuan'];
 
         Penjualan::create($validated);
 
@@ -82,7 +101,8 @@ class PenjualanController extends Controller
             'catatan' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        $validated['total'] = $validated['jumlah'] * $validated['harga_satuan'];
+        $validated['total'] =
+            $validated['jumlah'] * $validated['harga_satuan'];
 
         $penjualan->update($validated);
 
